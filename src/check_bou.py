@@ -2,7 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 
-BASE_URL = "https://bou.or.ug"
+BASE_URL = "https://bou.or.ug/financial_market"
+ROOT_URL = "https://bou.or.ug"
 
 KEYWORDS = [
     "treasury bill",
@@ -13,6 +14,9 @@ KEYWORDS = [
     "treasury bonds",
     "auction",
     "auction results",
+    "auction calendar",
+    "invitation",
+    "invitation to tender",
     "91-day",
     "182-day",
     "364-day",
@@ -22,23 +26,28 @@ KEYWORDS = [
     "10-year",
     "15-year",
     "20-year",
+    "government securities",
 ]
 
 IGNORE = [
     "calculator",
-    "research",
     "financial stability",
+    "research",
     "sentiment",
-    ".pdf",
 ]
 
-print("Connecting to BoU...")
+print("Connecting to BoU Financial Markets page...")
 
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
-response = requests.get(BASE_URL, headers=headers, timeout=30)
+response = requests.get(
+    BASE_URL,
+    headers=headers,
+    timeout=30,
+)
+
 response.raise_for_status()
 
 print("Connected.")
@@ -53,20 +62,22 @@ seen = set()
 found = False
 
 for link in links:
+
     text = link.get_text(" ", strip=True)
     href = link.get("href")
 
     if not href:
         continue
 
-    full_url = urljoin(BASE_URL, href)
+    full_url = urljoin(ROOT_URL, href)
 
     combined = f"{text} {full_url}".lower()
 
     if (
-        any(k in combined for k in KEYWORDS)
-        and not any(i in combined for i in IGNORE)
+        any(keyword in combined for keyword in KEYWORDS)
+        and not any(ignore in combined for ignore in IGNORE)
     ):
+
         if full_url not in seen:
             seen.add(full_url)
             found = True
@@ -77,6 +88,7 @@ for link in links:
             print("URL   :", full_url)
 
 if not found:
+    print("=" * 60)
     print("No Treasury Bill/Bond announcements found.")
 
-print("Finished.") 
+print("Finished.")
