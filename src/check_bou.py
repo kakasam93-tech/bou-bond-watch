@@ -75,20 +75,19 @@ elements => elements.map(a => ({
                     "url": href
                 })
 
-    browser.close()
-    for word in EXCLUDE:
-        if word in text or word in url:
-            return False
+browser.close()
 
-    for word in KEYWORDS:
-        if word in text or word in url:
-            return True
+print("\n" + "=" * 70)
+print("TREASURY SECURITIES FOUND")
+print("=" * 70)
 
-    if url.endswith(".pdf"):
-        if re.search(r"bill|bond|auction", url):
-            return True
-
-    return False
+if found:
+    for item in found:
+        print(f"Title: {item['title']}")
+        print(f"URL: {item['url']}")
+        print("-" * 70)
+else:
+    print("No Treasury Bill/Bond announcements found.")
 print("\n" + "=" * 70)
 print("TREASURY SECURITIES FOUND")
 print("=" * 70)
