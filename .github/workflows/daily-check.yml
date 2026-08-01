@@ -17,10 +17,14 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install Python packages
         run: |
-          pip install requests
+          pip install -r requirements.txt
 
-      - name: Check BoU
+      - name: Install Playwright browser
+        run: |
+          playwright install chromium
+
+      - name: Run scraper
         run: |
           python src/check_bou.py
