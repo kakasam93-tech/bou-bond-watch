@@ -1,94 +1,116 @@
-import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 from urllib.parse import urljoin
+import re
 
-BASE_URL = "https://bou.or.ug/financial_market"
-ROOT_URL = "https://bou.or.ug"
+BASE_URL = "https://bou.or.ug"
+
+START_PAGES = [
+    "https://bou.or.ug/bouwebsite/FinancialMarkets/",
+    "https://bou.or.ug/",
+]
 
 KEYWORDS = [
     "treasury bill",
     "treasury bills",
-    "t-bill",
-    "t-bills",
     "treasury bond",
     "treasury bonds",
+    "t-bill",
+    "t-bills",
     "auction",
-    "auction results",
-    "auction calendar",
-    "invitation",
-    "invitation to tender",
-    "91-day",
-    "182-day",
-    "364-day",
-    "2-year",
-    "3-year",
-    "5-year",
-    "10-year",
-    "15-year",
-    "20-year",
     "government securities",
 ]
 
-IGNORE = [
+EXCLUDE = [
     "calculator",
-    "financial stability",
-    "research",
     "sentiment",
+    "financial stability",
+    "annual report",
+    "policy statement",
 ]
 
-print("Connecting to BoU Financial Markets page...")
+found = []
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
 
-response = requests.get(
-    BASE_URL,
-    headers=headers,
-    timeout=30,
-)
+def interesting(text, url):
+    text = (text or "").lower()
+    url = (url or "").lower()
+with sync_playwright() as p:
 
-response.raise_for_status()
+    browser = p.chromium.launch(headless=True)
 
-print("Connected.")
+    page = browser.new_page()
 
-soup = BeautifulSoup(response.text, "lxml")
+    for start_page in START_PAGES:
 
-links = soup.find_all("a")
+        print(f"\nOpening {start_page}")
 
-print(f"Found {len(links)} links")
+        try:
+            page.goto(start_page, wait_until="networkidle", timeout=60000)
+        except Exception as e:
+            print("Failed:", e)
+            continue
+
+        links = page.locator("a").evaluate_all("""
+elements => elements.map(a => ({
+    text: (a.innerText || "").trim(),
+    href: a.href
+}))
+""")
+
+        print(f"Found {len(links)} links")
+
+        for link in links:
+
+            text = link["text"]
+            href = link["href"]
+
+            if not href:
+                continue
+
+            href = urljoin(BASE_URL, href)
+
+            if interesting(text, href):
+                found.append({
+                    "title": text,
+                    "url": href
+                })
+
+    browser.close()
+    for word in EXCLUDE:
+        if word in text or word in url:
+            return False
+
+    for word in KEYWORDS:
+        if word in text or word in url:
+            return True
+
+    if url.endswith(".pdf"):
+        if re.search(r"bill|bond|auction", url):
+            return True
+
+    return False
+print("\n" + "=" * 70)
+print("TREASURY SECURITIES FOUND")
+print("=" * 70)
 
 seen = set()
-found = False
+count = 0
 
-for link in links:
+for item in found:
 
-    text = link.get_text(" ", strip=True)
-    href = link.get("href")
+    key = item["url"].strip().lower()
 
-    if not href:
+    if key in seen:
         continue
 
-    full_url = urljoin(ROOT_URL, href)
+    seen.add(key)
+    count += 1
 
-    combined = f"{text} {full_url}".lower()
+    print(f"\n[{count}]")
+    print("Title :", item["title"] if item["title"] else "(No title)")
+    print("URL   :", item["url"])
 
-    if (
-        any(keyword in combined for keyword in KEYWORDS)
-        and not any(ignore in combined for ignore in IGNORE)
-    ):
+if count == 0:
+    print("\nNo Treasury Bill or Treasury Bond announcements were found.")
 
-        if full_url not in seen:
-            seen.add(full_url)
-            found = True
-
-            print("=" * 60)
-            print("NEW TREASURY SECURITY FOUND")
-            print("Title :", text)
-            print("URL   :", full_url)
-
-if not found:
-    print("=" * 60)
-    print("No Treasury Bill/Bond announcements found.")
-
-print("Finished.")
+print("\nFinished.")
