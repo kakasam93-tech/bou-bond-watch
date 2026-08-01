@@ -26,3 +26,17 @@ for link in soup.find_all("a", href=True):
 
 if not found:
     print("No PDF links found.")
+print("\n========== PAGE TITLE ==========")
+print(soup.title.string if soup.title else "No title")
+
+print("\n========== FIRST 30 LINKS ==========")
+
+links = soup.find_all("a", href=True)
+
+print(f"Total links found: {len(links)}")
+
+for i, link in enumerate(links[:30], start=1):
+    text = link.get_text(" ", strip=True)
+    href = link["href"]
+    print(f"{i}. {text}")
+    print(f"   {href}")
