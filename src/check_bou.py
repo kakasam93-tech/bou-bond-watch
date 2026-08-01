@@ -10,55 +10,34 @@ KEYWORDS = [
     "t-bills",
     "treasury bond",
     "treasury bonds",
-    "bond auction",
-    "bill auction",
+    "91-day",
+    "182-day",
+    "364-day",
+    "2-year",
+    "3-year",
+    "5-year",
+    "10-year",
+    "15-year",
+    "20-year",
     "auction",
-    "government securities",
+    "auction results",
+    "invitation",
+    "issue no",
+]
+
+IGNORE = [
+    "calculator",
+    "financial stability",
+    "sentiment",
+    "annual report",
+    "research",
+    ".pdf",
 ]
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
-
     page = browser.new_page()
 
     print("Opening BoU homepage...")
 
-    page.goto(
-        BASE_URL,
-        wait_until="domcontentloaded",
-        timeout=60000,
-    )
-
-    page.wait_for_timeout(5000)
-
-    links = page.locator("a").all()
-
-    print(f"Found {len(links)} links")
-
-    seen = set()
-
-    for link in links:
-        try:
-            text = link.inner_text().strip()
-            href = link.get_attribute("href")
-
-            if not href:
-                continue
-
-            full_url = urljoin(BASE_URL, href)
-
-            combined = f"{text} {full_url}".lower()
-
-            if any(keyword in combined for keyword in KEYWORDS):
-                if full_url not in seen:
-                    seen.add(full_url)
-
-                    print("=" * 60)
-                    print("NEW TREASURY SECURITY FOUND")
-                    print(f"Title : {text}")
-                    print(f"URL   : {full_url}")
-
-        except Exception:
-            continue
-
-    browser.close()
+    page
