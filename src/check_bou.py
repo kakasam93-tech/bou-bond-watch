@@ -1,18 +1,43 @@
-import requests
+from playwright.sync_api import sync_playwright
 
-url = "https://bou.or.ug/financial-markets/"
+URL = "https://bou.or.ug/financial-markets/"
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
 
-response = requests.get(url, headers=headers, timeout=30)
+    page = browser.new_page()
 
-print("=" * 60)
-print("Status Code:", response.status_code)
-print("Final URL :", response.url)
-print("Content Type:", response.headers.get("Content-Type"))
-print("=" * 60)
+    print("Opening BoU website...")
 
-print("\nFIRST 1000 CHARACTERS OF THE RESPONSE:\n")
-print(response.text[:1000])
+    page.goto(URL, wait_until="networkidle")
+
+    print("Page loaded")
+
+    print("Title:")
+    print(page.title())
+
+    print()
+
+    print("Looking for Invitation to Tender...")
+
+    links = page.locator("a").all()
+
+    print(f"Found {len(links)} links")
+
+    for link in links:
+        try:
+            text = link.inner_text().strip()
+            href = link.get_attribute("href")
+
+            if text:
+                print(text)
+
+            if href:
+                print(href)
+
+            print("-" * 40)
+
+        except Exception:
+            pass
+
+    browser.close()
