@@ -1,43 +1,47 @@
 from playwright.sync_api import sync_playwright
 
-URL = "https://bou.or.ug/financial-markets/"
+URL = "https://bou.or.ug"
+
+KEYWORDS = [
+    "financial",
+    "market",
+    "treasury",
+    "bond",
+    "bill",
+    "tender",
+    "auction"
+]
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
-
     page = browser.new_page()
 
-    print("Opening BoU website...")
-
+    print("Opening BoU homepage...")
     page.goto(URL, wait_until="networkidle")
-
-    print("Page loaded")
-
-    print("Title:")
-    print(page.title())
-
-    print()
-
-    print("Looking for Invitation to Tender...")
 
     links = page.locator("a").all()
 
-    print(f"Found {len(links)} links")
+    print(f"Scanning {len(links)} links...\n")
+
+    seen = set()
 
     for link in links:
         try:
             text = link.inner_text().strip()
             href = link.get_attribute("href")
 
-            if text:
-                print(text)
+            if not href:
+                continue
 
-            if href:
-                print(href)
+            combined = (text + " " + href).lower()
 
-            print("-" * 40)
-
-        except Exception:
+            if any(word in combined for word in KEYWORDS):
+                if href not in seen:
+                    seen.add(href)
+                    print("=" * 60)
+                    print("TEXT :", text)
+                    print("LINK :", href)
+        except:
             pass
 
     browser.close()
