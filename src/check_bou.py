@@ -4,13 +4,16 @@ from urllib.parse import urljoin
 BASE_URL = "https://bou.or.ug"
 
 KEYWORDS = [
-    "financial",
-    "markets",
-    "treasury",
-    "bond",
-    "bill",
+    "treasury bill",
+    "treasury bills",
+    "t-bill",
+    "t-bills",
+    "treasury bond",
+    "treasury bonds",
+    "bond auction",
+    "bill auction",
     "auction",
-    "tender",
+    "government securities",
 ]
 
 with sync_playwright() as p:
@@ -30,7 +33,7 @@ with sync_playwright() as p:
 
     links = page.locator("a").all()
 
-    print(f"Found {len(links)} links\n")
+    print(f"Found {len(links)} links")
 
     seen = set()
 
@@ -46,14 +49,16 @@ with sync_playwright() as p:
 
             combined = f"{text} {full_url}".lower()
 
-            if any(word in combined for word in KEYWORDS):
+            if any(keyword in combined for keyword in KEYWORDS):
                 if full_url not in seen:
                     seen.add(full_url)
+
                     print("=" * 60)
-                    print("TEXT:", text)
-                    print("URL :", full_url)
+                    print("NEW TREASURY SECURITY FOUND")
+                    print(f"Title : {text}")
+                    print(f"URL   : {full_url}")
 
         except Exception:
-            pass
+            continue
 
     browser.close()
