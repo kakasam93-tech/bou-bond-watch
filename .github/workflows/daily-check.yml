@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
   schedule:
-    # Every day at 05:00 UTC
+    # Runs every day at 05:00 UTC
     - cron: "0 5 * * *"
 
 jobs:
@@ -24,10 +24,23 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
-          - name: Install Playwright browser
-  run: python -m playwright install chromium
+
+      - name: Install Playwright browser
+        run: |
+          python -m playwright install chromium
+
+      - name: Create data directory
+        run: |
+          mkdir -p data
+          if [ ! -f data/seen.json ]; then
+            echo "[]" > data/seen.json
+          fi
 
       - name: Run BoU scraper
         run: |
           python src/check_bou.py
+
+      - name: Upload database
+        uses: actions/upload-artifact@v4
+        with:
+          name: bou-results
