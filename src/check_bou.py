@@ -34,7 +34,21 @@ found = []
 def interesting(text, url):
     text = (text or "").lower()
     url = (url or "").lower()
-with sync_playwright() as p:
+
+    for word in EXCLUDE:
+        if word in text or word in url:
+            return False
+
+    for word in KEYWORDS:
+        if word in text or word in url:
+            return True
+
+    if url.endswith(".pdf"):
+        if re.search(r"bill|bond|auction", url):
+            return True
+
+    return False
+    with sync_playwright() as p:
 
     browser = p.chromium.launch(headless=True)
 
@@ -75,20 +89,8 @@ elements => elements.map(a => ({
                     "url": href
                 })
 
-browser.close()
-
-print("\n" + "=" * 70)
-print("TREASURY SECURITIES FOUND")
-print("=" * 70)
-
-if found:
-    for item in found:
-        print(f"Title: {item['title']}")
-        print(f"URL: {item['url']}")
-        print("-" * 70)
-else:
-    print("No Treasury Bill/Bond announcements found.")
-print("\n" + "=" * 70)
+    browser.close()
+    print("\n" + "=" * 70)
 print("TREASURY SECURITIES FOUND")
 print("=" * 70)
 
