@@ -1,0 +1,28 @@
+name: BoU Bond Watch
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    # Runs every day at 05:00 UTC (08:00 Uganda time)
+    - cron: "0 5 * * *"
+
+jobs:
+  check-bou:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify workflow
+        run: |
+          echo "=================================="
+          echo "BoU Bond Watch is running!"
+          echo "Date: $(date)"
+          echo "=================================="
