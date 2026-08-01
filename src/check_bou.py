@@ -1,34 +1,36 @@
 from playwright.sync_api import sync_playwright
+from urllib.parse import urljoin
 
-URL = "https://bou.or.ug"
+BASE_URL = "https://bou.or.ug"
 
 KEYWORDS = [
     "financial",
-    "market",
+    "markets",
     "treasury",
     "bond",
     "bill",
+    "auction",
     "tender",
-    "auction"
 ]
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
+
     page = browser.new_page()
 
     print("Opening BoU homepage...")
 
-page.goto(
-    BASE_URL,
-    wait_until="domcontentloaded",
-    timeout=60000
-)
+    page.goto(
+        BASE_URL,
+        wait_until="domcontentloaded",
+        timeout=60000,
+    )
 
-page.wait_for_timeout(5000)
+    page.wait_for_timeout(5000)
 
     links = page.locator("a").all()
 
-    print(f"Scanning {len(links)} links...\n")
+    print(f"Found {len(links)} links\n")
 
     seen = set()
 
@@ -40,15 +42,18 @@ page.wait_for_timeout(5000)
             if not href:
                 continue
 
-            combined = (text + " " + href).lower()
+            full_url = urljoin(BASE_URL, href)
+
+            combined = f"{text} {full_url}".lower()
 
             if any(word in combined for word in KEYWORDS):
-                if href not in seen:
-                    seen.add(href)
+                if full_url not in seen:
+                    seen.add(full_url)
                     print("=" * 60)
-                    print("TEXT :", text)
-                    print("LINK :", href)
-        except:
+                    print("TEXT:", text)
+                    print("URL :", full_url)
+
+        except Exception:
             pass
 
     browser.close()
