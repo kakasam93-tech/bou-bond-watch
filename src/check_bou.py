@@ -17,7 +17,14 @@ with sync_playwright() as p:
     page = browser.new_page()
 
     print("Opening BoU homepage...")
-    page.goto(URL, wait_until="networkidle")
+
+page.goto(
+    BASE_URL,
+    wait_until="domcontentloaded",
+    timeout=60000
+)
+
+page.wait_for_timeout(5000)
 
     links = page.locator("a").all()
 
