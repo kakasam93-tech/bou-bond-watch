@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
   schedule:
-    # Runs every day at 05:00 UTC (08:00 Uganda time)
     - cron: "0 5 * * *"
 
 jobs:
@@ -12,17 +11,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Verify workflow
+      - name: Install dependencies
         run: |
-          echo "=================================="
-          echo "BoU Bond Watch is running!"
-          echo "Date: $(date)"
-          echo "=================================="
+          pip install -r requirements.txt
+
+      - name: Check BoU
+        run: |
+          python src/check_bou.py
