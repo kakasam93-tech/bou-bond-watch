@@ -6,6 +6,9 @@ on:
   schedule:
     - cron: "0 5 * * *"
 
+permissions:
+  contents: write
+
 jobs:
   check-bou:
     runs-on: ubuntu-latest
@@ -13,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -38,3 +43,18 @@ jobs:
       - name: Run BoU scraper
         run: |
           python src/check_bou.py
+
+      - name: Commit updated database
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/seen.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Update seen Treasury announcements"
+          git push
