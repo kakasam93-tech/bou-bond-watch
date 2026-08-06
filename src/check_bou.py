@@ -1,156 +1,115 @@
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
+import json
+import os
 import re
+from urllib.parse import urljoin
 
-BASE_URL = "https://bou.or.ug"
+from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 
-START_PAGES = [
-    "https://bou.or.ug",
+START_URLS = [
+    "https://bou.or.ug/",
     "https://bou.or.ug/financial-markets/",
 ]
 
 KEYWORDS = [
     "treasury bill",
     "treasury bills",
-    "t-bill",
-    "t-bills",
     "treasury bond",
     "treasury bonds",
+    "tb auction",
     "bond auction",
-    "bill auction",
     "auction results",
-    "government securities",
+    "auction",
 ]
 
-EXCLUDE = [
-    "calculator",
-    "interest rates",
-    "exchange rates",
-    "careers",
-    "vacancies",
-    "procurement",
-    "press release",
-    "monetary policy",
-]
+DATA_FILE = "data/seen.json"
 
 
-def interesting(text, url):
-    text = text.lower()
-    url = url.lower()
+def load_seen():
+    if not os.path.exists(DATA_FILE):
+        return []
 
-    for word in EXCLUDE:
-        if word in text or word in url:
-            return False
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_seen(data):
+    os.makedirs("data", exist_ok=True)
+
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def interesting(title):
+    title = title.lower()
 
     for word in KEYWORDS:
-        if word in text or word in url:
-            return True
-
-    if url.endswith(".pdf"):
-        if re.search(r"(bill|bond|auction|security)", url):
+        if word in title:
             return True
 
     return False
 
 
-found = []
+def scrape():
 
-visited = set()
+    seen = load_seen()
+    new_items = []
 
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "Mozilla/5.0"
-})
+    with sync_playwright() as p:
 
-print("Searching Bank of Uganda...")
+        browser = p.chromium.launch(headless=True)
 
-for start in START_PAGES:
+        page = browser.new_page()
 
-    try:
-        response = session.get(start, timeout=20)
-        response.raise_for_status()
-    except Exception as e:
-        print(f"Cannot open {start}")
-        print(e)
-        continue
+        for url in START_URLS:
 
-    soup = BeautifulSoup(response.text, "lxml")
-
-    links = soup.find_all("a", href=True)
-
-    print(f"{start} -> {len(links)} links")
-
-    for link in links:
-
-        href = urljoin(BASE_URL, link["href"])
-
-        if href in visited:
-            continue
-
-        visited.add(href)
-
-        text = link.get_text(" ", strip=True)
-
-        if interesting(text, href):
-            found.append({
-                "title": text if text else "(No title)",
-                "url": href
-            })
-
-        if href.startswith(BASE_URL):
+            print(f"Searching {url}")
 
             try:
-                page = session.get(href, timeout=10)
+                page.goto(url, wait_until="networkidle", timeout=60000)
 
-                if "text/html" not in page.headers.get("Content-Type", ""):
-                    continue
+                html = page.content()
 
-                inner = BeautifulSoup(page.text, "lxml")
+                soup = BeautifulSoup(html, "lxml")
 
-                for a in inner.find_all("a", href=True):
+                links = soup.find_all("a", href=True)
 
-                    url = urljoin(BASE_URL, a["href"])
+                print(f"Found {len(links)} links")
 
-                    if url in visited:
+                for link in links:
+
+                    text = link.get_text(" ", strip=True)
+                    href = urljoin(url, link["href"])
+
+                    combined = (text + " " + href).lower()
+
+                    if not interesting(combined):
                         continue
 
-                    visited.add(url)
+                    if href in seen:
+                        continue
 
-                    title = a.get_text(" ", strip=True)
+                    print("=" * 60)
+                    print("NEW TREASURY ANNOUNCEMENT")
+                    print(text)
+                    print(href)
+                    print("=" * 60)
 
-                    if interesting(title, url):
-                        found.append({
-                            "title": title if title else "(No title)",
-                            "url": url
-                        })
+                    new_items.append(href)
+                    seen.append(href)
 
-            except:
-                pass
+            except Exception as e:
+                print(e)
+
+        browser.close()
+
+    save_seen(seen)
+
+    if not new_items:
+        print("\nNo new Treasury Bill/Bond announcements found.")
+
+    print("\nFinished.")
 
 
-# Remove duplicates
-unique = []
-seen = set()
-
-for item in found:
-    key = item["url"]
-
-    if key not in seen:
-        seen.add(key)
-        unique.append(item)
-
-print("\n" + "=" * 70)
-
-if unique:
-    print(f"FOUND {len(unique)} TREASURY SECURITY LINKS\n")
-
-    for item in unique:
-        print(f"Title : {item['title']}")
-        print(f"URL   : {item['url']}")
-        print("-" * 70)
-
-else:
-    print("No Treasury Bill/Bond announcements found.")
-
-print("\nFinished.")
+if __name__ == "__main__":
+    scrape()
