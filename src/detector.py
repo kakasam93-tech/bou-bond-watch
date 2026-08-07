@@ -180,6 +180,10 @@ def find_latest_tender() -> Optional[dict]:
 
     return result
 
+# Backward-compatible name used by check_bou.py
+def find_latest_bond():
+    return find_latest_tender()
+
 
 if __name__ == "__main__":
     find_latest_tender()
