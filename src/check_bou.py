@@ -5,6 +5,7 @@ def main():
     print("=" * 60)
     print("BoU Bond Watch")
     print("=" * 60)
+
     print("Checking official Bank of Uganda Financial Markets page...")
     print()
 
@@ -16,13 +17,13 @@ def main():
         return
 
     print()
-    print("-" * 60)
+    print("=" * 60)
     print("LATEST TREASURY BOND TENDER")
-    print("-" * 60)
+    print("=" * 60)
     print(f"Title: {tender.title}")
-    print(f"PDF:   {tender.pdf_url}")
+    print(f"PDF: {tender.pdf_url}")
     print()
-    print("Detector test completed successfully.")
+    print("Treasury bond detected.")
 
 
 if __name__ == "__main__":
